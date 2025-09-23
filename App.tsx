@@ -1,16 +1,12 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
 
-import { NewAppScreen } from '@react-native/new-app-screen';
+
 import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { CameraScreen } from './src/screens/CameraScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SplashScreen } from './src/screens/SplashScreen';
+import { HomeScreen } from './src/screens/HomeScreen';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -24,14 +20,36 @@ function App() {
 }
 
 function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
+  const [route, setRoute] = useState<'splash' | 'home' | 'camera' | 'settings'>('splash');
+  const [autoStart, setAutoStart] = useState(false);
+  if (route === 'splash') {
+    return (
+      <View style={styles.container}>
+        <SplashScreen onDone={() => setRoute('home')} />
+      </View>
+    );
+  }
+  if (route === 'settings') {
+    return (
+      <View style={styles.container}>
+        <SettingsScreen onClose={() => setRoute('home')} />
+      </View>
+    );
+  }
+  if (route === 'camera') {
+    return (
+      <View style={styles.container}>
+        <CameraScreen
+          autoStart={autoStart}
+          onClose={() => setRoute('home')}
+          onOpenSettings={() => setRoute('settings')}
+        />
+      </View>
+    );
+  }
   return (
     <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
+      <HomeScreen onStart={() => { setAutoStart(true); setRoute('camera'); }} />
     </View>
   );
 }
