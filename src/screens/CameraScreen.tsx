@@ -366,15 +366,14 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import moment from 'moment-timezone';
 import { saveVideoFromTemp } from '../services/videoStorage';
 import { useSettings } from '../context/SettingsContext';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { useIsFocused } from '@react-navigation/native';
 import { useLocation } from '../hooks/useLocation';
 import { LocationOverlay } from '../components/LocationOverlay';
 
-//
 
 const CameraScreen = () => {
-  // const navigation = useNavigation();
+  const navigation = useNavigation();
   const isFocused = useIsFocused();
   const { settings, updateSettings } = useSettings();
   const camera = useRef<Camera>(null);
@@ -674,13 +673,6 @@ const CameraScreen = () => {
       <View style={styles.overlay}>
         {/* Top Bar */}
         <View style={styles.topBar}>
-          {/* <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => navigation.navigate('Settings' as never)}
-          >
-            <Icon name="settings" size={28} color="#e6edf3" />
-          </TouchableOpacity> */}
-
           {settings.locationTagging !== undefined && (
             <View
               style={[
@@ -708,13 +700,19 @@ const CameraScreen = () => {
           </View>
 
           <View style={styles.topRightRow}>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.iconButton}
               onPress={() => setShowResolutionPicker(true)}
             >
               <Text style={styles.resolutionText}>
                 {tempResolution || settings.videoResolution}
               </Text>
+            </TouchableOpacity> */}
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => navigation.navigate('Settings' as never)}
+            >
+              <Icon name="settings" size={28} color="#e6edf3" />
             </TouchableOpacity>
           </View>
         </View>
