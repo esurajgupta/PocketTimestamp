@@ -15,18 +15,26 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 function EmptyList() {
   return (
     <View style={styles.emptyWrap}>
-      <Text style={styles.empty}>No videos yet. Record one to see it here.</Text>
+      <Text style={styles.empty}>
+        No videos yet. Record one to see it here.
+      </Text>
     </View>
   );
 }
 
-export function HomeScreen({ onStart }: { onStart: () => void }) {
+export function HomeScreen({
+  onStart,
+  onOpenSettings,
+}: {
+  onStart: () => void;
+  onOpenSettings: () => void;
+}) {
   const [videos, setVideos] = useState<StoredVideo[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [thumbs, setThumbs] = useState<Record<string, string | null>>({});
-  const [player, setPlayer] = useState<{ visible: boolean; path?: string }>(
-    { visible: false },
-  );
+  const [player, setPlayer] = useState<{ visible: boolean; path?: string }>({
+    visible: false,
+  });
 
   const load = async () => {
     try {
@@ -68,7 +76,9 @@ export function HomeScreen({ onStart }: { onStart: () => void }) {
     if (!ms) return '';
     const d = new Date(ms);
     const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+      d.getDate(),
+    )} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
   useEffect(() => {
@@ -80,8 +90,14 @@ export function HomeScreen({ onStart }: { onStart: () => void }) {
           // @ts-ignore - optional dependency; ignore types if not installed
           const mod = await import('react-native-create-thumbnail');
           const fileUrl = `file://${v.path}`;
-          const res = await (mod as any).createThumbnail({ url: fileUrl, timeStamp: 1000 });
-          setThumbs(prev => ({ ...prev, [v.path]: res.path || res.uri || null }));
+          const res = await (mod as any).createThumbnail({
+            url: fileUrl,
+            timeStamp: 1000,
+          });
+          setThumbs(prev => ({
+            ...prev,
+            [v.path]: res.path || res.uri || null,
+          }));
         } catch {
           setThumbs(prev => ({ ...prev, [v.path]: null }));
         }
@@ -103,16 +119,27 @@ export function HomeScreen({ onStart }: { onStart: () => void }) {
             </View>
           )}
         </View>
-        <TouchableOpacity style={styles.cardInfo} onPress={() => setPlayer({ visible: true, path: item.path })}>
-          <Text numberOfLines={1} style={styles.cardTitle}>{item.name}</Text>
-          <Text style={styles.cardMeta}>{formatBytes(item.size)} • {formatDate(item.modified)}</Text>
+        <TouchableOpacity
+          style={styles.cardInfo}
+          onPress={() => setPlayer({ visible: true, path: item.path })}
+        >
+          <Text numberOfLines={1} style={styles.cardTitle}>
+            {item.name}
+          </Text>
+          <Text style={styles.cardMeta}>
+            {formatBytes(item.size)} • {formatDate(item.modified)}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.cardAction}
           onPress={() =>
             Alert.alert('Delete', 'Remove this video?', [
               { text: 'Cancel', style: 'cancel' },
-              { text: 'Delete', style: 'destructive', onPress: () => onDelete(item.path) },
+              {
+                text: 'Delete',
+                style: 'destructive',
+                onPress: () => onDelete(item.path),
+              },
             ])
           }
         >
@@ -127,6 +154,9 @@ export function HomeScreen({ onStart }: { onStart: () => void }) {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>PocketTimestamp</Text>
         <View style={styles.headerActions}>
+          <TouchableOpacity onPress={onOpenSettings} style={styles.iconBtn}>
+            <Icon name="settings" size={22} color="#e6edf3" />
+          </TouchableOpacity>
           <TouchableOpacity onPress={onRefresh} style={styles.iconBtn}>
             <Icon name="refresh" size={22} color="#e6edf3" />
           </TouchableOpacity>
@@ -143,7 +173,13 @@ export function HomeScreen({ onStart }: { onStart: () => void }) {
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={EmptyList}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#e6edf3" />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#e6edf3"
+          />
+        }
       />
 
       {/* Simple modal video player */}
@@ -152,33 +188,34 @@ export function HomeScreen({ onStart }: { onStart: () => void }) {
           <View style={styles.playerCard}>
             <View style={styles.playerHeader}>
               <Text style={styles.playerTitle}>Preview</Text>
-              <TouchableOpacity onPress={() => setPlayer({ visible: false })} style={styles.iconBtn}>
+              <TouchableOpacity
+                onPress={() => setPlayer({ visible: false })}
+                style={styles.iconBtn}
+              >
                 <Icon name="close" size={22} color="#e6edf3" />
               </TouchableOpacity>
             </View>
             <View style={styles.playerBody}>
-              {
-                (() => {
-                  try {
-                    // Lazy require to avoid hard dependency
-                    const Video = require('react-native-video').default;
-                    return (
-                      <Video
-                        source={{ uri: `file://${player.path}` }}
-                        style={styles.video}
-                        controls
-                        resizeMode="contain"
-                      />
-                    );
-                  } catch {
-                    return (
-                      <Text style={styles.empty}>
-                        Install react-native-video to preview videos.
-                      </Text>
-                    );
-                  }
-                })()
-              }
+              {(() => {
+                try {
+                  // Lazy require to avoid hard dependency
+                  const Video = require('react-native-video').default;
+                  return (
+                    <Video
+                      source={{ uri: `file://${player.path}` }}
+                      style={styles.video}
+                      controls
+                      resizeMode="contain"
+                    />
+                  );
+                } catch {
+                  return (
+                    <Text style={styles.empty}>
+                      Install react-native-video to preview videos.
+                    </Text>
+                  );
+                }
+              })()}
             </View>
           </View>
         </View>
@@ -283,6 +320,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#151c24',
   },
   playerTitle: { color: '#e6edf3', fontWeight: '700' },
-  playerBody: { width: '100%', aspectRatio: 16/9, backgroundColor: '#0b0f14' },
+  playerBody: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#0b0f14',
+  },
   video: { width: '100%', height: '100%' },
 });

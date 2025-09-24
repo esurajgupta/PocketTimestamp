@@ -127,6 +127,7 @@ const Home = ({ navigation }: any) => {
   return (
     <HomeScreen
       onStart={() => navigation.navigate('Camera', { autoStart: true })}
+      onOpenSettings={() => navigation.navigate('Settings')}
     />
   );
 };

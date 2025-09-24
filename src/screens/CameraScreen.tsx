@@ -366,7 +366,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import moment from 'moment-timezone';
 import { saveVideoFromTemp } from '../services/videoStorage';
 import { useSettings } from '../context/SettingsContext';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import { useIsFocused } from '@react-navigation/native';
 import { useLocation } from '../hooks/useLocation';
 import { LocationOverlay } from '../components/LocationOverlay';
@@ -374,7 +374,7 @@ import { LocationOverlay } from '../components/LocationOverlay';
 //
 
 const CameraScreen = () => {
-  const navigation = useNavigation();
+  // const navigation = useNavigation();
   const isFocused = useIsFocused();
   const { settings, updateSettings } = useSettings();
   const camera = useRef<Camera>(null);
@@ -528,7 +528,9 @@ const CameraScreen = () => {
           if (settings.locationTagging) {
             const timestamp = getFormattedDateTime();
             const locText = location
-              ? `${Number(location.latitude).toFixed(6)}, ${Number(location.longitude).toFixed(6)}`
+              ? `${Number(location.latitude).toFixed(6)}, ${Number(
+                  location.longitude,
+                ).toFixed(6)}`
               : '';
             const text = locText ? `${timestamp} | ${locText}` : `${timestamp}`;
             const { burnOverlay } = await import('../utils/ffmpegOverlay');
@@ -622,11 +624,6 @@ const CameraScreen = () => {
     if (!isFocused) return;
     if (!selectedDevice && !device) return;
     if (isRecording) return;
-    const id = setTimeout(() => {
-      hasAutoStartedRef.current = true;
-      startRecording();
-    }, 500);
-    return () => clearTimeout(id);
   }, [
     route?.params?.autoStart,
     hasPermission,
@@ -677,12 +674,27 @@ const CameraScreen = () => {
       <View style={styles.overlay}>
         {/* Top Bar */}
         <View style={styles.topBar}>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.iconButton}
             onPress={() => navigation.navigate('Settings' as never)}
           >
             <Icon name="settings" size={28} color="#e6edf3" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
+
+          {settings.locationTagging !== undefined && (
+            <View
+              style={[
+                styles.badge,
+                settings.locationTagging ? styles.badgeOn : styles.badgeOff,
+                styles.badgeTopRight,
+              ]}
+            >
+              <Icon name="location-on" size={16} color="#e6edf3" />
+              <Text style={styles.badgeText}>
+                {settings.locationTagging ? 'ON' : 'OFF'}
+              </Text>
+            </View>
+          )}
 
           <View style={styles.topCenter}>
             {isRecording && (
@@ -696,20 +708,6 @@ const CameraScreen = () => {
           </View>
 
           <View style={styles.topRightRow}>
-            {settings.locationTagging !== undefined && (
-              <View
-                style={[
-                  styles.badge,
-                  settings.locationTagging ? styles.badgeOn : styles.badgeOff,
-                  styles.badgeTopRight,
-                ]}
-              >
-                <Icon name="location-on" size={16} color="#e6edf3" />
-                <Text style={styles.badgeText}>
-                  {settings.locationTagging ? 'ON' : 'OFF'}
-                </Text>
-              </View>
-            )}
             <TouchableOpacity
               style={styles.iconButton}
               onPress={() => setShowResolutionPicker(true)}
@@ -907,7 +905,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 15,
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
     borderWidth: 1,
     borderColor: '#151c24',
   },
