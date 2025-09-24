@@ -439,7 +439,6 @@ const CameraScreen = () => {
     })();
   }, []);
 
-
   useEffect(() => {
     // Update time every second
     timeInterval.current = setInterval(() => {
@@ -452,6 +451,12 @@ const CameraScreen = () => {
     };
   }, []);
 
+  const getFormattedDateTime = React.useCallback(() => {
+    const format = settings.timestampFormat || 'YYYY-MM-DD HH:mm:ss';
+    const timezone = settings.timezone || 'UTC';
+    return moment(currentTime).tz(timezone).format(format);
+  }, [settings.timestampFormat, settings.timezone, currentTime]);
+
   // Ensure location starts as soon as the screen is focused
   useEffect(() => {
     if (!isFocused) {
@@ -460,7 +465,10 @@ const CameraScreen = () => {
     }
 
     (async () => {
-      if (!settings.locationTagging) return;
+      if (!settings.locationTagging) {
+        stopWatching();
+        return;
+      }
       if (locPermission !== 'granted') {
         const ok = await requestLocPerm();
         if (ok) startWatching();
@@ -472,8 +480,14 @@ const CameraScreen = () => {
     return () => {
       stopWatching();
     };
-  }, [isFocused, settings.locationTagging, locPermission, requestLocPerm, startWatching, stopWatching]);
-
+  }, [
+    isFocused,
+    settings.locationTagging,
+    locPermission,
+    requestLocPerm,
+    startWatching,
+    stopWatching,
+  ]);
 
   const scheduleAutoDeletion = async (filePath: string, days: number) => {
     // Store file info with deletion date
@@ -509,8 +523,18 @@ const CameraScreen = () => {
           updateSettings({ videoResolution: tempResolution });
         }
 
-        // Push to API (implement your API call here)
-        // await uploadToAPI(destPath);
+        // Burn overlay (timestamp + optional location) only when tagging enabled
+        try {
+          if (settings.locationTagging) {
+            const timestamp = getFormattedDateTime();
+            const locText = location
+              ? `${Number(location.latitude).toFixed(6)}, ${Number(location.longitude).toFixed(6)}`
+              : '';
+            const text = locText ? `${timestamp} | ${locText}` : `${timestamp}`;
+            const { burnOverlay } = await import('../utils/ffmpegOverlay');
+            await burnOverlay(destPath, { text });
+          }
+        } catch {}
 
         // Auto-delete after N days if enabled
         if (settings.autoDeleteDays > 0) {
@@ -524,8 +548,11 @@ const CameraScreen = () => {
     [
       settings.autoDeleteDays,
       settings.videoResolution,
+      settings.locationTagging,
       tempResolution,
       updateSettings,
+      location,
+      getFormattedDateTime,
     ],
   );
 
@@ -618,11 +645,7 @@ const CameraScreen = () => {
       .padStart(2, '0')}`;
   };
 
-  const getFormattedDateTime = () => {
-    const format = settings.timestampFormat || 'YYYY-MM-DD HH:mm:ss';
-    const timezone = settings.timezone || 'UTC';
-    return moment(currentTime).tz(timezone).format(format);
-  };
+  // moved above and memoized as useCallback
   if (hasPermission === 'pending' || (!device && !selectedDevice)) {
     return (
       <View style={styles.container}>
@@ -658,7 +681,7 @@ const CameraScreen = () => {
             style={styles.iconButton}
             onPress={() => navigation.navigate('Settings' as never)}
           >
-            <Icon name="settings" size={28} color="#fff" />
+            <Icon name="settings" size={28} color="#e6edf3" />
           </TouchableOpacity>
 
           <View style={styles.topCenter}>
@@ -672,14 +695,30 @@ const CameraScreen = () => {
             )}
           </View>
 
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => setShowResolutionPicker(true)}
-          >
-            <Text style={styles.resolutionText}>
-              {tempResolution || settings.videoResolution}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.topRightRow}>
+            {settings.locationTagging !== undefined && (
+              <View
+                style={[
+                  styles.badge,
+                  settings.locationTagging ? styles.badgeOn : styles.badgeOff,
+                  styles.badgeTopRight,
+                ]}
+              >
+                <Icon name="location-on" size={16} color="#e6edf3" />
+                <Text style={styles.badgeText}>
+                  {settings.locationTagging ? 'ON' : 'OFF'}
+                </Text>
+              </View>
+            )}
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => setShowResolutionPicker(true)}
+            >
+              <Text style={styles.resolutionText}>
+                {tempResolution || settings.videoResolution}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Timestamp and Location Overlay */}
@@ -694,29 +733,12 @@ const CameraScreen = () => {
               ? location.longitude
               : undefined
           }
+          enabled={!!settings.locationTagging}
         />
 
         {/* Bottom Bar */}
         <View style={styles.bottomBar}>
-          <View style={styles.bottomLeft}>
-            {settings.locationTagging !== undefined && (
-              <View
-                style={[
-                  styles.badge,
-                  {
-                    backgroundColor: settings.locationTagging
-                      ? '#4CAF50'
-                      : '#666',
-                  },
-                ]}
-              >
-                <Icon name="location-on" size={16} color="#fff" />
-                <Text style={styles.badgeText}>
-                  {settings.locationTagging ? 'ON' : 'OFF'}
-                </Text>
-              </View>
-            )}
-          </View>
+          <View style={styles.bottomLeft} />
 
           <TouchableOpacity
             style={[styles.recordButton, isRecording && styles.recordingButton]}
@@ -764,7 +786,7 @@ const CameraScreen = () => {
                 <Text style={styles.modalOptionText}>{option.label}</Text>
                 {(tempResolution || settings.videoResolution) ===
                   option.value && (
-                  <Icon name="check" size={24} color="#4CAF50" />
+                  <Icon name="check" size={24} color="#0a84ff" />
                 )}
               </TouchableOpacity>
             ))}
@@ -781,7 +803,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   errorText: {
-    color: '#fff',
+    color: '#e6edf3',
     fontSize: 18,
     textAlign: 'center',
     marginTop: 100,
@@ -802,24 +824,32 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
+  topRightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   iconButton: {
     padding: 10,
   },
   resolutionText: {
-    color: '#fff',
+    color: '#e6edf3',
     fontSize: 16,
     fontWeight: 'bold',
     padding: 10,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(17,22,29,0.7)',
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#151c24',
   },
   recordingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,0,0,0.8)',
+    backgroundColor: 'rgba(255,0,0,0.85)',
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#2a323c',
   },
   recordingDot: {
     width: 10,
@@ -829,7 +859,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   recordingTime: {
-    color: '#fff',
+    color: '#e6edf3',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -837,17 +867,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 120,
     left: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(17,22,29,0.6)',
     padding: 10,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#151c24',
   },
   timestampText: {
-    color: '#fff',
+    color: '#e6edf3',
     fontSize: 14,
     fontWeight: 'bold',
   },
   locationText: {
-    color: '#fff',
+    color: '#c3c7cf',
     fontSize: 12,
     marginTop: 4,
   },
@@ -876,9 +908,20 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 15,
     alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#151c24',
+  },
+  badgeOn: {
+    backgroundColor: '#4CAF50',
+  },
+  badgeOff: {
+    backgroundColor: '#2a323c',
+  },
+  badgeTopRight: {
+    marginRight: 8,
   },
   badgeText: {
-    color: '#fff',
+    color: '#e6edf3',
     fontSize: 12,
     fontWeight: 'bold',
     marginLeft: 4,
@@ -887,20 +930,20 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(230,237,243,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 5,
-    borderColor: '#fff',
+    borderColor: '#e6edf3',
   },
   recordingButton: {
-    borderColor: '#ff0000',
+    borderColor: '#ff3b30',
   },
   recordButtonInner: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#ff0000',
+    backgroundColor: '#ff3b30',
   },
   recordingInner: {
     width: 30,
@@ -909,21 +952,24 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: '#0f141a',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingVertical: 20,
     paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: '#151c24',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
+    color: '#e6edf3',
   },
   modalOption: {
     flexDirection: 'row',
@@ -932,13 +978,14 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#151c24',
   },
   selectedOption: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#11161d',
   },
   modalOptionText: {
     fontSize: 16,
+    color: '#e6edf3',
   },
 });
 

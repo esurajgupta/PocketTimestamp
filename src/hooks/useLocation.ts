@@ -7,7 +7,9 @@ export type LocationPermission = 'pending' | 'granted' | 'denied';
 
 export function useLocation() {
   const [permission, setPermission] = useState<LocationPermission>('pending');
-  const [location, setLocation] = useState<LocationCoords>(null);
+
+  const DEFAULT_LOCATION = { latitude: 13.12516, longitude: 77.687333 };
+  const [location, setLocation] = useState<LocationCoords>(DEFAULT_LOCATION);
   const watchId = useRef<number | null>(null);
 
   const requestPermission = useCallback(async () => {
@@ -31,7 +33,9 @@ export function useLocation() {
     } else {
       try {
         // iOS explicit authorization request
-        const auth = await (Geolocation as any)?.requestAuthorization?.('whenInUse');
+        const auth = await (Geolocation as any)?.requestAuthorization?.(
+          'whenInUse',
+        );
         const granted = auth === 'granted' || auth === true;
         setPermission(granted ? 'granted' : 'denied');
         return granted;
@@ -55,7 +59,7 @@ export function useLocation() {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
           }),
-          
+
         (_err: any) => {
           // Fallback to browser geolocation if available (e.g., web dev tools)
           const navGeo = (globalThis as any)?.navigator?.geolocation;
@@ -103,6 +107,7 @@ export function useLocation() {
   }, []);
 
   useEffect(() => {
+    // Do not auto-start; consumer controls when to request and watch
     return () => {
       stopWatching();
     };

@@ -5,19 +5,25 @@ export function LocationOverlay({
   timestamp,
   latitude,
   longitude,
+  enabled = true,
 }: {
   timestamp: string;
   latitude?: number;
   longitude?: number;
+  enabled?: boolean;
 }) {
-  console.log('latitude', latitude);
-  console.log('longitude', longitude);
+  const isValidNumber = (n: unknown) => typeof n === 'number' && isFinite(n as number);
+  const withinRange = (lat?: number, lon?: number) =>
+    isValidNumber(lat) && isValidNumber(lon) && lat! >= -90 && lat! <= 90 && lon! >= -180 && lon! <= 180;
+
+  const showCoords = enabled && withinRange(latitude, longitude);
+
   return (
     <View style={styles.wrap}>
       <Text style={styles.time}>{timestamp}</Text>
-      {latitude != null && longitude != null ? (
+      {showCoords ? (
         <Text style={styles.location}>
-          Lat: {latitude.toFixed(6)}, Lon: {longitude.toFixed(6)}
+          {`Lat: ${(latitude as number).toFixed(6)}, Lon: ${(longitude as number).toFixed(6)}`}
         </Text>
       ) : null}
     </View>
@@ -27,21 +33,29 @@ export function LocationOverlay({
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
-    top: 120,
     left: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 10,
-    borderRadius: 8,
+    bottom: 200,
+    backgroundColor: 'rgba(17,22,29,0.6)',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#151c24',
   },
   time: {
-    color: '#fff',
+    color: '#e6edf3',
     fontSize: 14,
     fontWeight: 'bold',
   },
   location: {
-    color: '#fff',
+    color: '#c3c7cf',
     fontSize: 12,
-    marginTop: 4,
+    marginTop: 6,
+  },
+  locationMuted: {
+    color: '#6b7785',
+    fontSize: 12,
+    marginTop: 6,
+    fontStyle: 'italic',
   },
 });
 

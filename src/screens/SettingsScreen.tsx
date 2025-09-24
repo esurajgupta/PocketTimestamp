@@ -116,7 +116,7 @@ const SettingsScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={28} color="#000" />
+          <Icon name="arrow-back" size={28} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
         <TouchableOpacity onPress={handleSave}>
@@ -135,9 +135,10 @@ const SettingsScreen = () => {
                 selectedValue={settings.theme}
                 onValueChange={value => updateSettings({ theme: value })}
                 style={styles.picker}
+                dropdownIconColor="#b8c1cc"
               >
                 {themes.map(theme => (
-                  <Picker.Item key={theme} label={theme} value={theme} />
+                  <Picker.Item key={theme} label={theme} value={theme} color="#e6edf3" />
                 ))}
               </Picker>
             </View>
@@ -162,9 +163,10 @@ const SettingsScreen = () => {
                   updateSettings({ videoResolution: value })
                 }
                 style={styles.picker}
+                dropdownIconColor="#b8c1cc"
               >
                 {resolutions.map(res => (
-                  <Picker.Item key={res} label={res} value={res} />
+                  <Picker.Item key={res} label={res} value={res} color="#e6edf3" />
                 ))}
               </Picker>
             </View>
@@ -184,9 +186,10 @@ const SettingsScreen = () => {
                   updateSettings({ timestampFormat: value })
                 }
                 style={styles.picker}
+                dropdownIconColor="#b8c1cc"
               >
                 {dateFormats.map(format => (
-                  <Picker.Item key={format} label={format} value={format} />
+                  <Picker.Item key={format} label={format} value={format} color="#e6edf3" />
                 ))}
               </Picker>
             </View>
@@ -199,9 +202,10 @@ const SettingsScreen = () => {
                 selectedValue={settings.timezone}
                 onValueChange={value => updateSettings({ timezone: value })}
                 style={styles.picker}
+                dropdownIconColor="#b8c1cc"
               >
                 {timezones.map(tz => (
-                  <Picker.Item key={tz} label={tz} value={tz} />
+                  <Picker.Item key={tz} label={tz} value={tz} color="#e6edf3" />
                 ))}
               </Picker>
             </View>
@@ -219,8 +223,8 @@ const SettingsScreen = () => {
               onValueChange={value =>
                 updateSettings({ locationTagging: value })
               }
-              trackColor={{ false: '#767577', true: '#4CAF50' }}
-              thumbColor={settings.locationTagging ? '#fff' : '#f4f3f4'}
+              trackColor={{ false: '#2a323c', true: '#0a84ff' }}
+              thumbColor={settings.locationTagging ? '#e6edf3' : '#c3c7cf'}
             />
           </View>
 
@@ -241,11 +245,12 @@ const SettingsScreen = () => {
               style={styles.input}
               value={settings.autoDeleteDays?.toString() || '0'}
               onChangeText={text => {
-                const days = parseInt(text) || 0;
+                const days = parseInt(text, 10) || 0;
                 updateSettings({ autoDeleteDays: days });
               }}
               keyboardType="numeric"
               placeholder="0"
+              placeholderTextColor="#6b7785"
             />
           </View>
           <Text style={styles.settingDescription}>
@@ -260,7 +265,7 @@ const SettingsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#0b0f14',
   },
   header: {
     flexDirection: 'row',
@@ -269,16 +274,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    backgroundColor: '#0b0f14',
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#141b22',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    color: '#e6edf3',
   },
   saveButton: {
-    color: '#4CAF50',
+    color: '#0a84ff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -286,15 +292,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: '#11161d',
     marginTop: 20,
     paddingVertical: 15,
     paddingHorizontal: 20,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#151c24',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: '#8ea0b5',
     marginBottom: 15,
     textTransform: 'uppercase',
   },
@@ -304,35 +318,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#151c24',
   },
   settingLabel: {
     fontSize: 16,
     flex: 1,
+    color: '#e6edf3',
   },
   settingValue: {
     fontSize: 16,
-    color: '#666',
+    color: '#9fb2c9',
   },
   settingDescription: {
     fontSize: 12,
-    color: '#999',
+    color: '#6b7785',
     marginTop: 5,
   },
   pickerContainer: {
     flex: 1,
     maxWidth: 150,
+    backgroundColor: '#0f141a',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#151c24',
   },
   picker: {
     height: 50,
+    color: '#e6edf3',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
+    borderColor: '#151c24',
+    backgroundColor: '#0f141a',
+    color: '#e6edf3',
+    borderRadius: 8,
     paddingHorizontal: 10,
-    paddingVertical: 8,
-    width: 80,
+    paddingVertical: 10,
+    width: 100,
     textAlign: 'center',
   },
 });
