@@ -10,15 +10,13 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>PocketTimestamp</Text>
-      <Text style={styles.subtitle}>Preparing camera...</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'black' },
-  title: { color: 'white', fontSize: 24, fontWeight: 'bold' },
-  subtitle: { color: '#aaa', marginTop: 8 },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ff8c00' },
+  title: { color: 'white', fontSize: 28, fontWeight: 'bold' },
 });
 
 

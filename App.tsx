@@ -66,6 +66,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import CameraScreen from './src/screens/CameraScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import { SplashScreen } from './src/screens/SplashScreen';
+import { HomeScreen } from './src/screens/HomeScreen';
 import { SettingsProvider } from './src/context/SettingsContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -82,6 +84,8 @@ const App = () => {
         const granted = await PermissionsAndroid.requestMultiple([
           PermissionsAndroid.PERMISSIONS.CAMERA,
           PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
         ]);
         console.log('Permissions granted:', granted);
       } catch (err) {
@@ -95,17 +99,35 @@ const App = () => {
       <SettingsProvider>
         <NavigationContainer>
           <Stack.Navigator
-            initialRouteName="Camera"
+            initialRouteName="Splash"
             screenOptions={{
               headerShown: false,
             }}
           >
+            <Stack.Screen name="Splash" component={Splash} />
+            <Stack.Screen name="Home" component={Home} />
             <Stack.Screen name="Camera" component={CameraScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </SettingsProvider>
     </GestureHandlerRootView>
+  );
+};
+
+const Splash = ({ navigation }: any) => {
+  useEffect(() => {
+    const id = setTimeout(() => navigation.replace('Home'), 1200);
+    return () => clearTimeout(id);
+  }, [navigation]);
+  return <SplashScreen onDone={() => navigation.replace('Home')} />;
+};
+
+const Home = ({ navigation }: any) => {
+  return (
+    <HomeScreen
+      onStart={() => navigation.navigate('Camera', { autoStart: true })}
+    />
   );
 };
 

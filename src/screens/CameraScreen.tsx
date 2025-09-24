@@ -354,17 +354,22 @@ import {
   StyleSheet,
   Alert,
   Modal,
-  PermissionsAndroid,
-  Platform,
 } from 'react-native';
-import { Camera, useCameraDevice, VideoFile, CameraDevice } from 'react-native-vision-camera';
+import {
+  Camera,
+  useCameraDevice,
+  VideoFile,
+  CameraDevice,
+} from 'react-native-vision-camera';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import Geolocation from '@react-native-community/geolocation';
-import RNFS from 'react-native-fs';
+//
 import moment from 'moment-timezone';
+import { saveVideoFromTemp } from '../services/videoStorage';
 import { useSettings } from '../context/SettingsContext';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useIsFocused } from '@react-navigation/native';
+import { useLocation } from '../hooks/useLocation';
+import { LocationOverlay } from '../components/LocationOverlay';
 
 //
 
@@ -379,10 +384,13 @@ const CameraScreen = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [location, setLocation] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
+  const {
+    permission: locPermission,
+    requestPermission: requestLocPerm,
+    location,
+    startWatching,
+    stopWatching,
+  } = useLocation();
   const [showResolutionPicker, setShowResolutionPicker] = useState(false);
   const [tempResolution, setTempResolution] = useState(
     settings.videoResolution,
@@ -391,14 +399,19 @@ const CameraScreen = () => {
   const timeInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const device = useCameraDevice('back');
-  const [selectedDevice, setSelectedDevice] = useState<CameraDevice | null>(null);
+  const [selectedDevice, setSelectedDevice] = useState<CameraDevice | null>(
+    null,
+  );
+  const route = useRoute<any>();
+  const hasAutoStartedRef = useRef(false);
 
   useEffect(() => {
     (async () => {
       if (hasPermission !== 'granted') return;
       try {
         const devices = await Camera.getAvailableCameraDevices();
-        const back = devices.find(d => d.position === 'back') || devices[0] || null;
+        const back =
+          devices.find(d => d.position === 'back') || devices[0] || null;
         setSelectedDevice(back);
       } catch (e) {
         console.warn('Failed to get camera devices', e);
@@ -406,6 +419,8 @@ const CameraScreen = () => {
       }
     })();
   }, [hasPermission]);
+
+  // Auto-start effect moved below startRecording
 
   const resolutionOptions = [
     { label: '720p', value: '720p', width: 1280, height: 720 },
@@ -424,35 +439,6 @@ const CameraScreen = () => {
     })();
   }, []);
 
-  const getCurrentLocation = useCallback(() => {
-    Geolocation.getCurrentPosition(
-      position => {
-        setLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-      },
-      error => console.log(error),
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 },
-    );
-  }, []);
-
-  const requestLocationPermission = useCallback(async () => {
-    if (Platform.OS === 'android') {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        );
-        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-          getCurrentLocation();
-        }
-      } catch (err) {
-        console.warn(err);
-      }
-    } else {
-      getCurrentLocation();
-    }
-  }, [getCurrentLocation]);
 
   useEffect(() => {
     // Update time every second
@@ -460,103 +446,34 @@ const CameraScreen = () => {
       setCurrentTime(new Date());
     }, 1000);
 
-    // Get location if enabled
-    if (settings.locationTagging) {
-      requestLocationPermission();
-    }
-
     return () => {
       if (timeInterval.current) clearInterval(timeInterval.current);
       if (recordingInterval.current) clearInterval(recordingInterval.current);
     };
-  }, [settings.locationTagging, requestLocationPermission]);
+  }, []);
 
-  // duplicate removed
-
-  //
-
-  const startRecording = async () => {
-    if (!camera.current || hasPermission !== 'granted') {
-      Alert.alert('Error', 'Camera not ready');
+  // Ensure location starts as soon as the screen is focused
+  useEffect(() => {
+    if (!isFocused) {
+      stopWatching();
       return;
     }
 
-    try {
-      setIsRecording(true);
-      setRecordingTime(0);
-
-      recordingInterval.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-
-      await camera.current.startRecording({
-        onRecordingFinished: (video: VideoFile) => {
-          console.log('Video recorded:', video);
-          processVideo(video);
-        },
-        onRecordingError: error => {
-          console.error('Recording error:', error);
-          Alert.alert('Recording Error', 'Failed to record video');
-          setIsRecording(false);
-          if (recordingInterval.current) {
-            clearInterval(recordingInterval.current);
-          }
-        },
-      });
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Recording Error', 'Failed to start recording');
-      setIsRecording(false);
-    }
-  };
-
-  const stopRecording = async () => {
-    if (camera.current && isRecording) {
-      await camera.current.stopRecording();
-      setIsRecording(false);
-      if (recordingInterval.current) {
-        clearInterval(recordingInterval.current);
+    (async () => {
+      if (!settings.locationTagging) return;
+      if (locPermission !== 'granted') {
+        const ok = await requestLocPerm();
+        if (ok) startWatching();
+      } else {
+        startWatching();
       }
-    }
-  };
+    })();
 
-  const processVideo = async (video: VideoFile) => {
-    try {
-      // Create folder path
-      const folderPath = `${RNFS.PicturesDirectoryPath}/CameraApp`;
+    return () => {
+      stopWatching();
+    };
+  }, [isFocused, settings.locationTagging, locPermission, requestLocPerm, startWatching, stopWatching]);
 
-      // Create directory if it doesn't exist
-      const dirExists = await RNFS.exists(folderPath);
-      if (!dirExists) {
-        await RNFS.mkdir(folderPath);
-      }
-
-      // Generate filename with timestamp
-      const filename = `VID_${moment().format('YYYYMMDD_HHmmss')}.mp4`;
-      const destPath = `${folderPath}/${filename}`;
-
-      // Copy video to app folder
-      await RNFS.copyFile(video.path, destPath);
-
-      Alert.alert('Success', 'Video saved successfully');
-
-      // Update settings to save resolution preference
-      if (tempResolution !== settings.videoResolution) {
-        updateSettings({ videoResolution: tempResolution });
-      }
-
-      // Push to API (implement your API call here)
-      // await uploadToAPI(destPath);
-
-      // Auto-delete after N days if enabled
-      if (settings.autoDeleteDays > 0) {
-        scheduleAutoDeletion(destPath, settings.autoDeleteDays);
-      }
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Save Error', 'Failed to save video');
-    }
-  };
 
   const scheduleAutoDeletion = async (filePath: string, days: number) => {
     // Store file info with deletion date
@@ -579,6 +496,120 @@ const CameraScreen = () => {
     }
   };
 
+  const processVideo = useCallback(
+    async (video: VideoFile) => {
+      try {
+        // Save with service
+        const destPath = await saveVideoFromTemp(video.path);
+
+        Alert.alert('Success', 'Video saved successfully');
+
+        // Update settings to save resolution preference
+        if (tempResolution !== settings.videoResolution) {
+          updateSettings({ videoResolution: tempResolution });
+        }
+
+        // Push to API (implement your API call here)
+        // await uploadToAPI(destPath);
+
+        // Auto-delete after N days if enabled
+        if (settings.autoDeleteDays > 0) {
+          scheduleAutoDeletion(destPath, settings.autoDeleteDays);
+        }
+      } catch (error) {
+        console.error(error);
+        Alert.alert('Save Error', 'Failed to save video');
+      }
+    },
+    [
+      settings.autoDeleteDays,
+      settings.videoResolution,
+      tempResolution,
+      updateSettings,
+    ],
+  );
+
+  const startRecording = useCallback(async () => {
+    if (!camera.current || hasPermission !== 'granted') {
+      Alert.alert('Error', 'Camera not ready');
+      return;
+    }
+
+    try {
+      // If user wants location tagging but permission not yet granted, ask now
+      if (settings.locationTagging && locPermission !== 'granted') {
+        const ok = await requestLocPerm();
+        if (ok) startWatching();
+      }
+
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      recordingInterval.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+
+      await camera.current.startRecording({
+        onRecordingFinished: async (video: VideoFile) => {
+          console.log('Video recorded:', video);
+          await processVideo(video);
+        },
+        onRecordingError: error => {
+          console.error('Recording error:', error);
+          Alert.alert('Recording Error', 'Failed to record video');
+          setIsRecording(false);
+          if (recordingInterval.current) {
+            clearInterval(recordingInterval.current);
+          }
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Recording Error', 'Failed to start recording');
+      setIsRecording(false);
+    }
+  }, [
+    hasPermission,
+    locPermission,
+    requestLocPerm,
+    startWatching,
+    settings.locationTagging,
+    processVideo,
+  ]);
+
+  const stopRecording = async () => {
+    if (camera.current && isRecording) {
+      await camera.current.stopRecording();
+      setIsRecording(false);
+      if (recordingInterval.current) {
+        clearInterval(recordingInterval.current);
+      }
+    }
+  };
+
+  // Auto-start recording if route param set (only once per visit)
+  useEffect(() => {
+    if (!route?.params?.autoStart) return;
+    if (hasAutoStartedRef.current) return;
+    if (hasPermission !== 'granted') return;
+    if (!isFocused) return;
+    if (!selectedDevice && !device) return;
+    if (isRecording) return;
+    const id = setTimeout(() => {
+      hasAutoStartedRef.current = true;
+      startRecording();
+    }, 500);
+    return () => clearTimeout(id);
+  }, [
+    route?.params?.autoStart,
+    hasPermission,
+    isFocused,
+    selectedDevice,
+    device,
+    isRecording,
+    startRecording,
+  ]);
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -592,14 +623,6 @@ const CameraScreen = () => {
     const timezone = settings.timezone || 'UTC';
     return moment(currentTime).tz(timezone).format(format);
   };
-
-  const getLocationString = () => {
-    if (!settings.locationTagging || !location) return '';
-    return `Lat: ${location.latitude.toFixed(
-      6,
-    )}, Lon: ${location.longitude.toFixed(6)}`;
-  };
-
   if (hasPermission === 'pending' || (!device && !selectedDevice)) {
     return (
       <View style={styles.container}>
@@ -621,7 +644,7 @@ const CameraScreen = () => {
       <Camera
         ref={camera}
         style={StyleSheet.absoluteFill}
-        device={selectedDevice || device}
+        device={(selectedDevice || device)!}
         isActive={isFocused}
         video={true}
         audio={true}
@@ -660,12 +683,18 @@ const CameraScreen = () => {
         </View>
 
         {/* Timestamp and Location Overlay */}
-        <View style={styles.timestampOverlay}>
-          <Text style={styles.timestampText}>{getFormattedDateTime()}</Text>
-          {settings.locationTagging && location && (
-            <Text style={styles.locationText}>{getLocationString()}</Text>
-          )}
-        </View>
+
+        <LocationOverlay
+          timestamp={getFormattedDateTime()}
+          latitude={
+            settings.locationTagging && location ? location.latitude : undefined
+          }
+          longitude={
+            settings.locationTagging && location
+              ? location.longitude
+              : undefined
+          }
+        />
 
         {/* Bottom Bar */}
         <View style={styles.bottomBar}>
