@@ -1,26 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
-  Alert,
-  Image,
-  RefreshControl,
+  ImageBackground,
 } from 'react-native';
-import { listVideos, deleteVideo, StoredVideo } from '../services/videoStorage';
+// import { deleteVideo, StoredVideo } from '../services/videoStorage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-function EmptyList() {
-  return (
-    <View style={styles.emptyWrap}>
-      <Text style={styles.empty}>
-        No videos yet. Record one to see it here.
-      </Text>
-    </View>
-  );
-}
+// function EmptyList() {
+//   return (
+//     <View style={styles.emptyWrap}>
+//       <Text style={styles.empty}>
+//         No videos yet. Record one to see it here.
+//       </Text>
+//     </View>
+//   );
+// }
 
 export function HomeScreen({
   onStart,
@@ -29,159 +26,168 @@ export function HomeScreen({
   onStart: () => void;
   onOpenSettings: () => void;
 }) {
-  const [videos, setVideos] = useState<StoredVideo[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [thumbs, setThumbs] = useState<Record<string, string | null>>({});
+  // const [videos, setVideos] = useState<StoredVideo[]>([]);
+  // const [refreshing, setRefreshing] = useState(false);
+  // const [thumbs, setThumbs] = useState<Record<string, string | null>>({});
   const [player, setPlayer] = useState<{ visible: boolean; path?: string }>({
     visible: false,
   });
 
-  const load = async () => {
-    try {
-      const items = await listVideos();
-      setVideos(items);
-    } catch (e) {
-      console.warn(e);
-    }
-  };
+  // const load = async () => {
+  //   try {
+  //     const items = await listVideos();
+  //     setVideos(items);
+  //   } catch (e) {
+  //     console.warn(e);
+  //   }
+  // };
 
-  useEffect(() => {
-    load();
-  }, []);
+  // useEffect(() => {
+  //   load();
+  // }, []);
 
-  const onDelete = async (path: string) => {
-    await deleteVideo(path);
-    await load();
-  };
+  // const onDelete = async (path: string) => {
+  //   await deleteVideo(path);
+  //   await load();
+  // };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  };
+  // const onRefresh = async () => {
+  //   setRefreshing(true);
+  //   await load();
+  //   setRefreshing(false);
+  // };
 
-  const formatBytes = (bytes: number): string => {
-    if (!bytes || bytes < 0) return '—';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    let size = bytes;
-    let unit = 0;
-    while (size >= 1024 && unit < units.length - 1) {
-      size /= 1024;
-      unit += 1;
-    }
-    return `${size.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
-  };
+  // const formatBytes = (bytes: number): string => {
+  //   if (!bytes || bytes < 0) return '—';
+  //   const units = ['B', 'KB', 'MB', 'GB'];
+  //   let size = bytes;
+  //   let unit = 0;
+  //   while (size >= 1024 && unit < units.length - 1) {
+  //     size /= 1024;
+  //     unit += 1;
+  //   }
+  //   return `${size.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
+  // };
 
-  const formatDate = (ms: number): string => {
-    if (!ms) return '';
-    const d = new Date(ms);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
-      d.getDate(),
-    )} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  };
+  // const formatDate = (ms: number): string => {
+  //   if (!ms) return '';
+  //   const d = new Date(ms);
+  //   const pad = (n: number) => String(n).padStart(2, '0');
+  //   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+  //     d.getDate(),
+  //   )} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  // };
 
-  useEffect(() => {
-    (async () => {
-      // generate thumbnails lazily
-      for (const v of videos) {
-        if (thumbs[v.path] !== undefined) continue;
-        try {
-          // @ts-ignore - optional dependency; ignore types if not installed
-          const mod = await import('react-native-create-thumbnail');
-          const fileUrl = `file://${v.path}`;
-          const res = await (mod as any).createThumbnail({
-            url: fileUrl,
-            timeStamp: 1000,
-          });
-          setThumbs(prev => ({
-            ...prev,
-            [v.path]: res.path || res.uri || null,
-          }));
-        } catch {
-          setThumbs(prev => ({ ...prev, [v.path]: null }));
-        }
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videos]);
+  // useEffect(() => {
+  //   (async () => {
+  //     // generate thumbnails lazily
+  //     for (const v of videos) {
+  //       if (thumbs[v.path] !== undefined) continue;
+  //       try {
+  //         // @ts-ignore - optional dependency; ignore types if not installed
+  //         const mod = await import('react-native-create-thumbnail');
+  //         const fileUrl = `file://${v.path}`;
+  //         const res = await (mod as any).createThumbnail({
+  //           url: fileUrl,
+  //           timeStamp: 1000,
+  //         });
+  //         setThumbs(prev => ({
+  //           ...prev,
+  //           [v.path]: res.path || res.uri || null,
+  //         }));
+  //       } catch {
+  //         setThumbs(prev => ({ ...prev, [v.path]: null }));
+  //       }
+  //     }
+  //   })();
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [videos]);
 
-  const renderItem = ({ item }: { item: StoredVideo }) => {
-    console.log("utem",item)
-    const uri = thumbs[item.path];
-    return (
-      <View style={styles.card}>
-        <View style={styles.thumbWrap}>
-          {uri ? (
-            <Image source={{ uri }} style={styles.thumb} resizeMode="cover" />
-          ) : (
-            <View style={styles.thumbPlaceholder}>
-              <Icon name="movie" size={28} color="#8ea0b5" />
-            </View>
-          )}
-        </View>
-        <TouchableOpacity
-          style={styles.cardInfo}
-          onPress={() => setPlayer({ visible: true, path: item.path })}
-        >
-          <Text numberOfLines={1} style={styles.cardTitle}>
-            {item.name}
-          </Text>
-          <Text style={styles.cardMeta}>
-            {formatBytes(item.size)} • {formatDate(item.modified)}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.cardAction}
-          onPress={() =>
-            Alert.alert('Delete', 'Remove this video?', [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Delete',
-                style: 'destructive',
-                onPress: () => onDelete(item.path),
-              },
-            ])
-          }
-        >
-          <Icon name="delete" size={22} color="#ff6666" />
-        </TouchableOpacity>
-      </View>
-    );
-  };
+  // const renderItem = ({ item }: { item: StoredVideo }) => {
+  //   console.log('utem', item);
+  //   const uri = thumbs[item.path];
+  //   return (
+  //     <View style={styles.card}>
+  //       <View style={styles.thumbWrap}>
+  //         {uri ? (
+  //           <Image source={{ uri }} style={styles.thumb} resizeMode="cover" />
+  //         ) : (
+  //           <View style={styles.thumbPlaceholder}>
+  //             <Icon name="movie" size={28} color="#8ea0b5" />
+  //           </View>
+  //         )}
+  //       </View>
+  //       <TouchableOpacity
+  //         style={styles.cardInfo}
+  //         onPress={() => setPlayer({ visible: true, path: item.path })}
+  //       >
+  //         <Text numberOfLines={1} style={styles.cardTitle}>
+  //           {item.name}
+  //         </Text>
+  //         <Text style={styles.cardMeta}>
+  //           {formatBytes(item.size)} • {formatDate(item.modified)}
+  //         </Text>
+  //       </TouchableOpacity>
+  //       <TouchableOpacity
+  //         style={styles.cardAction}
+  //         onPress={() =>
+  //           Alert.alert('Delete', 'Remove this video?', [
+  //             { text: 'Cancel', style: 'cancel' },
+  //             {
+  //               text: 'Delete',
+  //               style: 'destructive',
+  //               onPress: () => onDelete(item.path),
+  //             },
+  //           ])
+  //         }
+  //       >
+  //         <Icon name="delete" size={22} color="#ff6666" />
+  //       </TouchableOpacity>
+  //     </View>
+  //   );
+  // };
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>PocketTimestamp</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={onOpenSettings} style={styles.iconBtn}>
-            <Icon name="settings" size={22} color="#e6edf3" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onRefresh} style={styles.iconBtn}>
-            <Icon name="refresh" size={22} color="#e6edf3" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onStart} style={styles.primaryBtn}>
-            <Icon name="videocam" size={18} color="#0b0f14" />
-            <Text style={styles.primaryBtnText}>Record</Text>
+      <ImageBackground
+        source={{
+          uri: 'https://images.unsplash.com/photo-1518779578993-ec3579fee39f?auto=format&fit=crop&w=1400&q=60',
+        }}
+        style={styles.bg}
+        resizeMode="cover"
+      >
+        <View style={styles.overlay} />
+
+        <View style={styles.topBar}>
+          <Text style={styles.brand}>PocketTimestamp</Text>
+          <TouchableOpacity onPress={onOpenSettings} style={styles.topIconBtn}>
+            <Icon name="settings" size={24} color="#ffffff" />
           </TouchableOpacity>
         </View>
-      </View>
 
-      <FlatList
-        data={videos}
-        keyExtractor={item => item.path}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={EmptyList}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#e6edf3"
-          />
-        }
-      />
+        <View style={styles.centerContent}>
+          <Text style={styles.tagline}>
+            Capture moments with precise timestamps
+          </Text>
+
+          <TouchableOpacity
+            onPress={onStart}
+            activeOpacity={0.9}
+            style={styles.recordCta}
+          >
+            <View style={styles.recordOuter}>
+              <View style={styles.recordInner}>
+                <Icon name="videocam" size={28} color="#0b0f14" />
+              </View>
+            </View>
+            <Text style={styles.recordLabel}>Start Recording</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>v1.0 • Welcome</Text>
+        </View>
+      </ImageBackground>
 
       {/* Simple modal video player */}
       {player.visible && (
@@ -230,6 +236,66 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0b0f14',
   },
+  bg: { flex: 1 },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 22,
+  },
+  brand: {
+    color: '#ffffff',
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  topIconBtn: { padding: 10 },
+  centerContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  tagline: {
+    color: '#ffffff',
+    fontSize: 14,
+    opacity: 0.9,
+    marginBottom: 18,
+    textAlign: 'center',
+  },
+  recordCta: { alignItems: 'center' },
+  recordOuter: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recordInner: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#0a84ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recordLabel: {
+    color: '#ffffff',
+    marginTop: 10,
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  footer: {
+    alignItems: 'center',
+    paddingBottom: 16,
+  },
+  footerText: { color: '#e6edf3', opacity: 0.7 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
