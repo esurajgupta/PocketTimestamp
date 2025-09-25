@@ -1,6 +1,10 @@
 import { Video as VideoCompressor, getRealPath } from 'react-native-compressor';
+import RNFS from 'react-native-fs';
+import moment from 'moment-timezone';
+import { Platform } from 'react-native';
+
 export type OverlayOptions = {
-  text: string; // single line, already composed (e.g., "2025-09-23 12:30 | 19.07,72.88")
+  text: string;
 };
 
 export async function burnOverlay(
@@ -12,10 +16,10 @@ export async function burnOverlay(
 
 export async function compressVideo(
   inputPath: string,
-  opts: { width: number; height: number; bitrateKbps: number },
+  opts: { width: number; targetBitrateKbps: number },
   onProgress?: (progressPercent: number) => void,
 ): Promise<string> {
-  const { width, bitrateKbps } = opts;
+  const { width, targetBitrateKbps } = opts;
 
   try {
     const compressedTemp: string = await VideoCompressor.compress(
@@ -23,22 +27,49 @@ export async function compressVideo(
       {
         compressionMethod: 'manual',
         maxSize: width,
-        bitrate: bitrateKbps * 1000,
-        minimumFileSizeForCompress: 5,
+        bitrate: targetBitrateKbps * 1000,
+        minimumFileSizeForCompress: 1,
       },
       progress => {
-        if (typeof onProgress === 'function') {
-          try { onProgress(progress); } catch {}
+        if (onProgress) {
+          const percent = Math.round(progress * 100);
+          onProgress(percent);
         }
       },
     );
 
+    let realPath = compressedTemp;
     try {
-      const real = await getRealPath(compressedTemp, 'video');
-      return real || compressedTemp || inputPath;
-    } catch {
-      return compressedTemp || inputPath;
+      const maybe = await getRealPath(compressedTemp, 'video');
+      if (maybe) realPath = maybe;
+    } catch {}
+
+    if (Platform.OS === 'android') {
+      const dcim = (RNFS as any).DCIMDirectoryPath || (RNFS.ExternalStorageDirectoryPath + '/DCIM');
+      const folderPath = `${dcim}/Camera`;
+      await RNFS.mkdir(folderPath);
+      const filename = `VID_${moment().format('YYYYMMDD_HHmmss')}.mp4`;
+      const destPath = `${folderPath}/${filename}`;
+
+      // Move instead of copy
+      await RNFS.moveFile(realPath.replace('file://', ''), destPath);
+
+      // Trigger media scan (⚡ fix: pass string not object)
+      // if (typeof (RNFS as any).scanFile === 'function') {
+      //   await (RNFS as any).scanFile(destPath);
+      // }
+
+      // ✅ Delete original uncompressed input if it exists
+      try {
+        const exists = await RNFS.exists(inputPath);
+        if (exists) await RNFS.unlink(inputPath);
+      } catch {}
+
+      return destPath;
     }
+
+    // iOS: later we can add PHPhotoLibrary
+    return realPath;
   } catch (e) {
     console.error('Compression failed:', e);
     return inputPath;
