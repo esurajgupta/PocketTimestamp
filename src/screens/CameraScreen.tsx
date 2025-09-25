@@ -370,10 +370,11 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { useIsFocused } from '@react-navigation/native';
 import { useLocation } from '../hooks/useLocation';
 import { LocationOverlay } from '../components/LocationOverlay';
-
+import { compressVideo } from '../utils/ffmpegOverlay';
+import RNFS from 'react-native-fs';
 
 const CameraScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const isFocused = useIsFocused();
   const { settings, updateSettings } = useSettings();
   const camera = useRef<Camera>(null);
@@ -394,6 +395,8 @@ const CameraScreen = () => {
   const [tempResolution, setTempResolution] = useState(
     settings.videoResolution,
   );
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processProgress, setProcessProgress] = useState(0);
   const recordingInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -421,12 +424,15 @@ const CameraScreen = () => {
 
   // Auto-start effect moved below startRecording
 
-  const resolutionOptions = [
-    { label: '720p', value: '720p', width: 1280, height: 720 },
-    { label: '1080p', value: '1080p', width: 1920, height: 1080 },
-    { label: '4K', value: '4K', width: 3840, height: 2160 },
-    { label: 'Auto', value: 'Auto', width: 1920, height: 1080 },
-  ];
+  const resolutionOptions = React.useMemo(
+    () => [
+      { label: '720p', value: '720p', width: 1280, height: 720 },
+      { label: '1080p', value: '1080p', width: 1920, height: 1080 },
+      { label: '4K', value: '4K', width: 3840, height: 2160 },
+      { label: 'Auto', value: 'Auto', width: 1920, height: 1080 },
+    ],
+    [],
+  );
 
   useEffect(() => {
     (async () => {
@@ -515,7 +521,53 @@ const CameraScreen = () => {
         // Save with service
         const destPath = await saveVideoFromTemp(video.path);
 
-        Alert.alert('Success', 'Video saved successfully');
+        // Compress to target bitrate based on selection
+        const selected = (tempResolution || settings.videoResolution) as string;
+        const res = resolutionOptions.find(r => r.value === selected) || resolutionOptions[1];
+        // Target sizes per requirement
+        // 720p → ~2 Mbps (~15 MB/min)
+        // 1080p → ~40 MB/min (~5.3 Mbps)
+        // 4K → ~90 MB/min (~12 Mbps)
+        const bitrateKbps = selected === '720p' ? 2000 : selected === '1080p' ? 5300 : selected === '4K' ? 12000 : 5300;
+        let finalPath = destPath; // will point to the file we keep in storage
+        try {
+          setIsProcessing(true);
+          setProcessProgress(0);
+          const compressedTempPath = await compressVideo(
+            destPath,
+            {
+              width: res.width,
+              height: res.height,
+              bitrateKbps,
+            },
+            p => setProcessProgress(Math.max(0, Math.min(100, Math.round(p)))),
+          );
+          // If compressor returned a different temp file, replace original in our storage dir
+          if (compressedTempPath && compressedTempPath !== destPath) {
+            try {
+              const exists = await RNFS.exists(destPath);
+              if (exists) {
+                await RNFS.unlink(destPath);
+              }
+            } catch {}
+            try {
+              await RNFS.copyFile(
+                compressedTempPath.startsWith('file://')
+                  ? compressedTempPath.replace('file://', '')
+                  : compressedTempPath,
+                destPath,
+              );
+              finalPath = destPath;
+            } catch {
+              // fallback to whatever compressor returned
+              finalPath = compressedTempPath;
+            }
+          }
+        } catch {}
+        finally {
+          setIsProcessing(false);
+          setProcessProgress(100);
+        }
 
         // Update settings to save resolution preference
         if (tempResolution !== settings.videoResolution) {
@@ -533,14 +585,20 @@ const CameraScreen = () => {
               : '';
             const text = locText ? `${timestamp} | ${locText}` : `${timestamp}`;
             const { burnOverlay } = await import('../utils/ffmpegOverlay');
-            await burnOverlay(destPath, { text });
+            await burnOverlay(finalPath, { text });
           }
         } catch {}
 
         // Auto-delete after N days if enabled
         if (settings.autoDeleteDays > 0) {
-          scheduleAutoDeletion(destPath, settings.autoDeleteDays);
+          scheduleAutoDeletion(finalPath, settings.autoDeleteDays);
         }
+        // Navigate back to Home so the list can refresh
+        try {
+          navigation.navigate?.('Home');
+        } catch {}
+
+        Alert.alert('Success', 'Video saved successfully');
       } catch (error) {
         console.error(error);
         Alert.alert('Save Error', 'Failed to save video');
@@ -554,6 +612,8 @@ const CameraScreen = () => {
       updateSettings,
       location,
       getFormattedDateTime,
+      navigation,
+      resolutionOptions,
     ],
   );
 
@@ -578,6 +638,7 @@ const CameraScreen = () => {
       }, 1000);
 
       await camera.current.startRecording({
+        videoCodec: 'h265',
         onRecordingFinished: async (video: VideoFile) => {
           console.log('Video recorded:', video);
           await processVideo(video);
@@ -641,6 +702,10 @@ const CameraScreen = () => {
       .padStart(2, '0')}`;
   };
 
+  // Reflect real device/location state: show ON only when tagging enabled,
+  // permission is granted, and we currently have a location fix
+  const isLocationOn = locPermission === 'granted' && !!location;
+
   // moved above and memoized as useCallback
   if (hasPermission === 'pending' || (!device && !selectedDevice)) {
     return (
@@ -667,23 +732,24 @@ const CameraScreen = () => {
         isActive={isFocused}
         video={true}
         audio={true}
+        // Let device decide best format when 'Auto'; otherwise hint target fps/format via videoStabilizationMode only.
       />
 
       {/* Overlay UI */}
       <View style={styles.overlay}>
         {/* Top Bar */}
         <View style={styles.topBar}>
-          {settings.locationTagging !== undefined && (
+          {settings.locationTagging && (
             <View
               style={[
                 styles.badge,
-                settings.locationTagging ? styles.badgeOn : styles.badgeOff,
+                isLocationOn ? styles.badgeOn : styles.badgeOff,
                 styles.badgeTopRight,
               ]}
             >
               <Icon name="location-on" size={16} color="#e6edf3" />
               <Text style={styles.badgeText}>
-                {settings.locationTagging ? 'ON' : 'OFF'}
+                {isLocationOn ? 'ON' : 'OFF'}
               </Text>
             </View>
           )}
@@ -700,14 +766,14 @@ const CameraScreen = () => {
           </View>
 
           <View style={styles.topRightRow}>
-            {/* <TouchableOpacity
+            <TouchableOpacity
               style={styles.iconButton}
               onPress={() => setShowResolutionPicker(true)}
             >
               <Text style={styles.resolutionText}>
                 {tempResolution || settings.videoResolution}
               </Text>
-            </TouchableOpacity> */}
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.iconButton}
               onPress={() => navigation.navigate('Settings' as never)}
@@ -721,15 +787,9 @@ const CameraScreen = () => {
 
         <LocationOverlay
           timestamp={getFormattedDateTime()}
-          latitude={
-            settings.locationTagging && location ? location.latitude : undefined
-          }
-          longitude={
-            settings.locationTagging && location
-              ? location.longitude
-              : undefined
-          }
-          enabled={!!settings.locationTagging}
+          latitude={isLocationOn && location ? location.latitude : undefined}
+          longitude={isLocationOn && location ? location.longitude : undefined}
+          enabled={isLocationOn}
         />
 
         {/* Bottom Bar */}
@@ -788,6 +848,24 @@ const CameraScreen = () => {
             ))}
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* Processing Modal */}
+      <Modal
+        visible={isProcessing}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {}}
+      >
+        <View style={styles.processingOverlay}>
+          <View style={styles.processingCard}>
+            <Text style={styles.processingTitle}>Compressing…</Text>
+            <View style={styles.progressBarWrap}>
+              <View style={[styles.progressBarFill, { width: `${processProgress}%` }]} />
+            </View>
+            <Text style={styles.progressText}>{processProgress}%</Text>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -982,6 +1060,49 @@ const styles = StyleSheet.create({
   modalOptionText: {
     fontSize: 16,
     color: '#e6edf3',
+  },
+  processingOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  processingCard: {
+    width: '80%',
+    maxWidth: 360,
+    backgroundColor: '#0f141a',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#151c24',
+    padding: 20,
+    alignItems: 'center',
+  },
+  processingTitle: {
+    color: '#e6edf3',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  progressBarWrap: {
+    width: '100%',
+    height: 10,
+    backgroundColor: '#151c24',
+    borderRadius: 6,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#1b2430',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#0a84ff',
+  },
+  progressText: {
+    color: '#8ea0b5',
+    marginTop: 8,
   },
 });
 

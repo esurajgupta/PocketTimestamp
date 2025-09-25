@@ -8,8 +8,7 @@ export type LocationPermission = 'pending' | 'granted' | 'denied';
 export function useLocation() {
   const [permission, setPermission] = useState<LocationPermission>('pending');
 
-  const DEFAULT_LOCATION = { latitude: 13.12516, longitude: 77.687333 };
-  const [location, setLocation] = useState<LocationCoords>(DEFAULT_LOCATION);
+  const [location, setLocation] = useState<LocationCoords>(null);
   const watchId = useRef<number | null>(null);
 
   const requestPermission = useCallback(async () => {

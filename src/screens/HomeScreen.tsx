@@ -107,6 +107,7 @@ export function HomeScreen({
   }, [videos]);
 
   const renderItem = ({ item }: { item: StoredVideo }) => {
+    console.log("utem",item)
     const uri = thumbs[item.path];
     return (
       <View style={styles.card}>
