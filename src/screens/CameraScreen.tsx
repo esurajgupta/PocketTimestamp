@@ -24,6 +24,7 @@ import { useLocation } from '../hooks/useLocation';
 import { LocationOverlay } from '../components/LocationOverlay';
 import { compressVideo } from '../utils/ffmpegOverlay';
 import RNFS from 'react-native-fs';
+import ProcessingModal from '../components/ProcessingModal';
 
 const CameraScreen = () => {
   const navigation = useNavigation<any>();
@@ -376,7 +377,6 @@ const CameraScreen = () => {
         audio={true}
         // Let device decide best format when 'Auto'; otherwise hint target fps/format via videoStabilizationMode only.
       />
-
       {/* Overlay UI */}
       <View style={styles.overlay}>
         {/* Top Bar */}
@@ -455,7 +455,6 @@ const CameraScreen = () => {
           <View style={styles.bottomRight} />
         </View>
       </View>
-
       {/* Resolution Picker Modal */}
       <Modal
         visible={showResolutionPicker}
@@ -493,29 +492,11 @@ const CameraScreen = () => {
           </View>
         </TouchableOpacity>
       </Modal>
-
-      {/* Processing Modal */}
-      <Modal
+      <ProcessingModal
         visible={isProcessing}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => {}}
-      >
-        <View style={styles.processingOverlay}>
-          <View style={styles.processingCard}>
-            <Text style={styles.processingTitle}>Compressing…</Text>
-            <View style={styles.progressBarWrap}>
-              <View
-                style={[
-                  styles.progressBarFill,
-                  { width: `${processProgress}%` },
-                ]}
-              />
-            </View>
-            <Text style={styles.progressText}>{processProgress}%</Text>
-          </View>
-        </View>
-      </Modal>
+        title="Compressing Video…"
+        progress={processProgress}
+      />
     </View>
   );
 };
