@@ -69,10 +69,10 @@ export function useLocation() {
                 longitude: npos.coords.longitude,
               }),
             () => {},
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+            { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 },
           );
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 },
       );
     getOneTime();
     // Retry once after a short delay to warm up providers on some devices

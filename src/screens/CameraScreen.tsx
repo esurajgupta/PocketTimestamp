@@ -523,12 +523,21 @@ const CameraScreen = () => {
 
         // Compress to target bitrate based on selection
         const selected = (tempResolution || settings.videoResolution) as string;
-        const res = resolutionOptions.find(r => r.value === selected) || resolutionOptions[1];
+        const res =
+          resolutionOptions.find(r => r.value === selected) ||
+          resolutionOptions[1];
         // Target sizes per requirement
         // 720p → ~2 Mbps (~15 MB/min)
         // 1080p → ~40 MB/min (~5.3 Mbps)
         // 4K → ~90 MB/min (~12 Mbps)
-        const bitrateKbps = selected === '720p' ? 2000 : selected === '1080p' ? 5300 : selected === '4K' ? 12000 : 5300;
+        const bitrateKbps =
+          selected === '720p'
+            ? 2000
+            : selected === '1080p'
+            ? 5300
+            : selected === '4K'
+            ? 12000
+            : 5300;
         let finalPath = destPath; // will point to the file we keep in storage
         try {
           setIsProcessing(true);
@@ -563,8 +572,8 @@ const CameraScreen = () => {
               finalPath = compressedTempPath;
             }
           }
-        } catch {}
-        finally {
+        } catch {
+        } finally {
           setIsProcessing(false);
           setProcessProgress(100);
         }
@@ -702,8 +711,6 @@ const CameraScreen = () => {
       .padStart(2, '0')}`;
   };
 
-  // Reflect real device/location state: show ON only when tagging enabled,
-  // permission is granted, and we currently have a location fix
   const isLocationOn = locPermission === 'granted' && !!location;
 
   // moved above and memoized as useCallback
@@ -765,22 +772,24 @@ const CameraScreen = () => {
             )}
           </View>
 
-          <View style={styles.topRightRow}>
-            <TouchableOpacity
-              style={styles.iconButton}
-              onPress={() => setShowResolutionPicker(true)}
-            >
-              <Text style={styles.resolutionText}>
-                {tempResolution || settings.videoResolution}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.iconButton}
-              onPress={() => navigation.navigate('Settings' as never)}
-            >
-              <Icon name="settings" size={28} color="#e6edf3" />
-            </TouchableOpacity>
-          </View>
+          {!isRecording && (
+            <View style={styles.topRightRow}>
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={() => setShowResolutionPicker(true)}
+              >
+                <Text style={styles.resolutionText}>
+                  {tempResolution || settings.videoResolution}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={() => navigation.navigate('Settings' as never)}
+              >
+                <Icon name="settings" size={28} color="#e6edf3" />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Timestamp and Location Overlay */}
@@ -861,7 +870,12 @@ const CameraScreen = () => {
           <View style={styles.processingCard}>
             <Text style={styles.processingTitle}>Compressing…</Text>
             <View style={styles.progressBarWrap}>
-              <View style={[styles.progressBarFill, { width: `${processProgress}%` }]} />
+              <View
+                style={[
+                  styles.progressBarFill,
+                  { width: `${processProgress}%` },
+                ]}
+              />
             </View>
             <Text style={styles.progressText}>{processProgress}%</Text>
           </View>
