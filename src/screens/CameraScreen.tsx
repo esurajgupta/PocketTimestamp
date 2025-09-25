@@ -520,7 +520,7 @@ const CameraScreen = () => {
       try {
         // Save with service
         const destPath = await saveVideoFromTemp(video.path);
-
+        console.log('destPath', destPath);
         // Compress to target bitrate based on selection
         const selected = (tempResolution || settings.videoResolution) as string;
         const res =
