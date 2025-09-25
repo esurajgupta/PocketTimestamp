@@ -120,7 +120,7 @@ const App = () => {
 
 const Splash = ({ navigation }: any) => {
   useEffect(() => {
-    const id = setTimeout(() => navigation.replace('Home'), 1200);
+    const id = setTimeout(() => navigation.replace('Home'), 2000);
     return () => clearTimeout(id);
   }, [navigation]);
   return <SplashScreen onDone={() => navigation.replace('Home')} />;

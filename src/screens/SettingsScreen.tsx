@@ -89,8 +89,20 @@ import { Picker } from '@react-native-picker/picker';
 const SettingsScreen = () => {
   const navigation = useNavigation();
   const { settings, updateSettings } = useSettings();
+  // Static palette (theme removed)
+  const colors = {
+    background: '#0a0f1e',
+    headerBg: '#0a0f1e',
+    border: '#142038',
+    text: '#e6edf3',
+    subtext: '#8ea0b5',
+    card: '#11161d',
+    cardBorder: '#151c24',
+    inputBg: '#0f141a',
+    primary: '#0a84ff',
+  };
 
-  const themes = ['System', 'Light', 'Dark'];
+  // const themes = ['System', 'Light', 'Dark'];
   const resolutions = ['720p', '1080p', '4K', 'Auto'];
   const timezones = [
     'UTC',
@@ -112,61 +124,132 @@ const SettingsScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={28} color="#fff" />
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: colors.headerBg,
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.headerIconBtn}
+        >
+          <Icon name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <TouchableOpacity onPress={handleSave}>
-          <Text style={styles.saveButton}>Save</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          Settings
+        </Text>
+        <TouchableOpacity onPress={handleSave} style={styles.saveBtn}>
+          <Icon name="check" size={16} color="#0b0f14" />
+          <Text style={styles.saveBtnText}>Save</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+      >
         {/* Theme Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Appearance</Text>
+        {/* <View
+          style={[
+            styles.section,
+            { backgroundColor: colors.card, borderColor: colors.cardBorder },
+          ]}
+        >
+          <View style={styles.sectionHeader}>
+            <Icon name="palette" size={18} color={colors.subtext} />
+            <Text style={[styles.sectionTitle, { color: colors.subtext }]}>
+              Appearance
+            </Text>
+          </View>
           <View style={styles.setting}>
-            <Text style={styles.settingLabel}>Theme</Text>
-            <View style={styles.pickerContainer}>
+            <Text style={[styles.settingLabel, { color: colors.text }]}>
+              Theme
+            </Text>
+            <View
+              style={[
+                styles.pickerContainer,
+                {
+                  backgroundColor: colors.inputBg,
+                  borderColor: colors.cardBorder,
+                },
+              ]}
+            >
               <Picker
                 selectedValue={settings.theme}
                 onValueChange={value => updateSettings({ theme: value })}
                 style={styles.picker}
-                dropdownIconColor="#b8c1cc"
+                dropdownIconColor={colors.subtext}
               >
                 {themes.map(theme => (
-                  <Picker.Item key={theme} label={theme} value={theme} color="#e6edf3" />
+                  <Picker.Item
+                    key={theme}
+                    label={theme}
+                    value={theme}
+                    color={colors.text}
+                  />
                 ))}
               </Picker>
             </View>
           </View>
-        </View>
+        </View> */}
 
         {/* Camera Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Camera</Text>
-
-          <View style={styles.setting}>
-            <Text style={styles.settingLabel}>Default Mode</Text>
-            <Text style={styles.settingValue}>Video</Text>
+        <View
+          style={[
+            styles.section,
+            { backgroundColor: colors.card, borderColor: colors.cardBorder },
+          ]}
+        >
+          <View style={styles.sectionHeader}>
+            <Icon name="videocam" size={18} color={colors.subtext} />
+            <Text style={[styles.sectionTitle, { color: colors.subtext }]}>
+              Camera
+            </Text>
           </View>
 
           <View style={styles.setting}>
-            <Text style={styles.settingLabel}>Video Resolution</Text>
-            <View style={styles.pickerContainer}>
+            <Text style={[styles.settingLabel, { color: colors.text }]}>
+              Default Mode
+            </Text>
+            <Text style={[styles.settingValue, { color: colors.subtext }]}>
+              Video
+            </Text>
+          </View>
+
+          <View style={styles.setting}>
+            <Text style={[styles.settingLabel, { color: colors.text }]}>
+              Video Resolution
+            </Text>
+            <View
+              style={[
+                styles.pickerContainer,
+                {
+                  backgroundColor: colors.inputBg,
+                  borderColor: colors.cardBorder,
+                },
+              ]}
+            >
               <Picker
                 selectedValue={settings.videoResolution}
                 onValueChange={value =>
                   updateSettings({ videoResolution: value })
                 }
                 style={styles.picker}
-                dropdownIconColor="#b8c1cc"
+                dropdownIconColor={colors.subtext}
               >
                 {resolutions.map(res => (
-                  <Picker.Item key={res} label={res} value={res} color="#e6edf3" />
+                  <Picker.Item
+                    key={res}
+                    label={res}
+                    value={res}
+                    color={colors.text}
+                  />
                 ))}
               </Picker>
             </View>
@@ -174,38 +257,78 @@ const SettingsScreen = () => {
         </View>
 
         {/* Timestamp Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Timestamp</Text>
+        <View
+          style={[
+            styles.section,
+            { backgroundColor: colors.card, borderColor: colors.cardBorder },
+          ]}
+        >
+          <View style={styles.sectionHeader}>
+            <Icon name="schedule" size={18} color={colors.subtext} />
+            <Text style={[styles.sectionTitle, { color: colors.subtext }]}>
+              Timestamp
+            </Text>
+          </View>
 
           <View style={styles.setting}>
-            <Text style={styles.settingLabel}>Date/Time Format</Text>
-            <View style={styles.pickerContainer}>
+            <Text style={[styles.settingLabel, { color: colors.text }]}>
+              Date/Time Format
+            </Text>
+            <View
+              style={[
+                styles.pickerContainer,
+                {
+                  backgroundColor: colors.inputBg,
+                  borderColor: colors.cardBorder,
+                },
+              ]}
+            >
               <Picker
                 selectedValue={settings.timestampFormat}
                 onValueChange={value =>
                   updateSettings({ timestampFormat: value })
                 }
                 style={styles.picker}
-                dropdownIconColor="#b8c1cc"
+                dropdownIconColor={colors.subtext}
               >
                 {dateFormats.map(format => (
-                  <Picker.Item key={format} label={format} value={format} color="#e6edf3" />
+                  <Picker.Item
+                    key={format}
+                    label={format}
+                    value={format}
+                    color={colors.text}
+                  />
                 ))}
               </Picker>
             </View>
           </View>
 
           <View style={styles.setting}>
-            <Text style={styles.settingLabel}>Timezone</Text>
-            <View style={styles.pickerContainer}>
+            <Text style={[styles.settingLabel, { color: colors.text }]}>
+              Timezone
+            </Text>
+            <View
+              style={[
+                styles.pickerContainer,
+                {
+                  backgroundColor: colors.inputBg,
+                  borderColor: colors.cardBorder,
+                },
+              ]}
+            >
               <Picker
                 selectedValue={settings.timezone}
                 onValueChange={value => updateSettings({ timezone: value })}
                 style={styles.picker}
-                dropdownIconColor="#b8c1cc"
+                dropdownIconColor={colors.subtext}
               >
                 {timezones.map(tz => (
-                  <Picker.Item key={tz} label={tz} value={tz} color="#e6edf3" />
+                  <Picker.Item
+                    key={tz}
+                    label={tz}
+                    value={tz}
+                    color={colors.text}
+                  />
                 ))}
               </Picker>
             </View>
@@ -213,11 +336,23 @@ const SettingsScreen = () => {
         </View>
 
         {/* Location Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Location</Text>
+        <View
+          style={[
+            styles.section,
+            { backgroundColor: colors.card, borderColor: colors.cardBorder },
+          ]}
+        >
+          <View style={styles.sectionHeader}>
+            <Icon name="place" size={18} color={colors.subtext} />
+            <Text style={[styles.sectionTitle, { color: colors.subtext }]}>
+              Location
+            </Text>
+          </View>
 
           <View style={styles.setting}>
-            <Text style={styles.settingLabel}>Location Tagging</Text>
+            <Text style={[styles.settingLabel, { color: colors.text }]}>
+              Location Tagging
+            </Text>
             <Switch
               value={settings.locationTagging}
               onValueChange={value =>
@@ -229,20 +364,41 @@ const SettingsScreen = () => {
           </View>
 
           {settings.locationTagging && (
-            <Text style={styles.settingDescription}>
+            <Text
+              style={[styles.settingDescription, { color: colors.subtext }]}
+            >
               When enabled, location coordinates will be stamped on videos
             </Text>
           )}
         </View>
 
         {/* Storage Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Storage</Text>
+        <View
+          style={[
+            styles.section,
+            { backgroundColor: colors.card, borderColor: colors.cardBorder },
+          ]}
+        >
+          <View style={styles.sectionHeader}>
+            <Icon name="folder" size={18} color={colors.subtext} />
+            <Text style={[styles.sectionTitle, { color: colors.subtext }]}>
+              Storage
+            </Text>
+          </View>
 
           <View style={styles.setting}>
-            <Text style={styles.settingLabel}>Auto-delete after (days)</Text>
+            <Text style={[styles.settingLabel, { color: colors.text }]}>
+              Auto-delete after (days)
+            </Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.inputBg,
+                  borderColor: colors.cardBorder,
+                  color: colors.text,
+                },
+              ]}
               value={settings.autoDeleteDays?.toString() || '0'}
               onChangeText={text => {
                 const days = parseInt(text, 10) || 0;
@@ -253,9 +409,31 @@ const SettingsScreen = () => {
               placeholderTextColor="#6b7785"
             />
           </View>
-          <Text style={styles.settingDescription}>
+          <Text style={[styles.settingDescription, { color: colors.subtext }]}>
             Set to 0 to disable auto-deletion
           </Text>
+        </View>
+        {/* About Section */}
+        <View
+          style={[
+            styles.section,
+            { backgroundColor: colors.card, borderColor: colors.cardBorder },
+          ]}
+        >
+          <View style={styles.sectionHeader}>
+            <Icon name="info" size={18} color={colors.subtext} />
+            <Text style={[styles.sectionTitle, { color: colors.subtext }]}>
+              About
+            </Text>
+          </View>
+          <View style={styles.settingLast}>
+            <Text style={[styles.settingLabel, { color: colors.text }]}>
+              App
+            </Text>
+            <Text style={[styles.settingValue, { color: colors.subtext }]}>
+              PocketTimestamp v1.0
+            </Text>
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -278,19 +456,26 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: '#141b22',
   },
+  headerIconBtn: { padding: 8 },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#e6edf3',
   },
-  saveButton: {
-    color: '#0a84ff',
-    fontSize: 16,
-    fontWeight: '600',
+  saveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#0a84ff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
   },
+  saveBtnText: { color: '#0b0f14', fontWeight: '700' },
   content: {
     flex: 1,
   },
+  contentContainer: { paddingBottom: 28 },
   section: {
     backgroundColor: '#11161d',
     marginTop: 20,
@@ -305,12 +490,19 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 6,
+  },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#8ea0b5',
-    marginBottom: 15,
     textTransform: 'uppercase',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   setting: {
     flexDirection: 'row',
@@ -319,6 +511,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#151c24',
+  },
+  settingLast: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
   },
   settingLabel: {
     fontSize: 16,

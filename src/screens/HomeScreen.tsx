@@ -5,19 +5,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   ImageBackground,
+  useColorScheme,
 } from 'react-native';
-// import { deleteVideo, StoredVideo } from '../services/videoStorage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-
-// function EmptyList() {
-//   return (
-//     <View style={styles.emptyWrap}>
-//       <Text style={styles.empty}>
-//         No videos yet. Record one to see it here.
-//       </Text>
-//     </View>
-//   );
-// }
+import { useSettings } from '../context/SettingsContext';
 
 export function HomeScreen({
   onStart,
@@ -26,129 +17,29 @@ export function HomeScreen({
   onStart: () => void;
   onOpenSettings: () => void;
 }) {
-  // const [videos, setVideos] = useState<StoredVideo[]>([]);
-  // const [refreshing, setRefreshing] = useState(false);
-  // const [thumbs, setThumbs] = useState<Record<string, string | null>>({});
+  const { settings } = useSettings();
+  const systemScheme = useColorScheme();
+  const preferred = (settings as any)?.theme || 'System';
+  const mode =
+    preferred === 'System' ? systemScheme : (preferred || 'Dark').toLowerCase();
+  const isDark = mode !== 'light';
+  const colors = {
+    background: isDark ? '#0b0f14' : '#f5f7fb',
+    text: isDark ? '#e6edf3' : '#0b0f14',
+    subtext: isDark ? '#8ea0b5' : '#4a5568',
+    card: isDark ? '#11161d' : '#ffffff',
+    border: isDark ? '#151c24' : '#e4e8ee',
+    primary: '#0a84ff',
+    overlay: isDark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.15)',
+    footer: isDark ? '#e6edf3' : '#556072',
+  };
+
   const [player, setPlayer] = useState<{ visible: boolean; path?: string }>({
     visible: false,
   });
 
-  // const load = async () => {
-  //   try {
-  //     const items = await listVideos();
-  //     setVideos(items);
-  //   } catch (e) {
-  //     console.warn(e);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   load();
-  // }, []);
-
-  // const onDelete = async (path: string) => {
-  //   await deleteVideo(path);
-  //   await load();
-  // };
-
-  // const onRefresh = async () => {
-  //   setRefreshing(true);
-  //   await load();
-  //   setRefreshing(false);
-  // };
-
-  // const formatBytes = (bytes: number): string => {
-  //   if (!bytes || bytes < 0) return '—';
-  //   const units = ['B', 'KB', 'MB', 'GB'];
-  //   let size = bytes;
-  //   let unit = 0;
-  //   while (size >= 1024 && unit < units.length - 1) {
-  //     size /= 1024;
-  //     unit += 1;
-  //   }
-  //   return `${size.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
-  // };
-
-  // const formatDate = (ms: number): string => {
-  //   if (!ms) return '';
-  //   const d = new Date(ms);
-  //   const pad = (n: number) => String(n).padStart(2, '0');
-  //   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
-  //     d.getDate(),
-  //   )} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  // };
-
-  // useEffect(() => {
-  //   (async () => {
-  //     // generate thumbnails lazily
-  //     for (const v of videos) {
-  //       if (thumbs[v.path] !== undefined) continue;
-  //       try {
-  //         // @ts-ignore - optional dependency; ignore types if not installed
-  //         const mod = await import('react-native-create-thumbnail');
-  //         const fileUrl = `file://${v.path}`;
-  //         const res = await (mod as any).createThumbnail({
-  //           url: fileUrl,
-  //           timeStamp: 1000,
-  //         });
-  //         setThumbs(prev => ({
-  //           ...prev,
-  //           [v.path]: res.path || res.uri || null,
-  //         }));
-  //       } catch {
-  //         setThumbs(prev => ({ ...prev, [v.path]: null }));
-  //       }
-  //     }
-  //   })();
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [videos]);
-
-  // const renderItem = ({ item }: { item: StoredVideo }) => {
-  //   console.log('utem', item);
-  //   const uri = thumbs[item.path];
-  //   return (
-  //     <View style={styles.card}>
-  //       <View style={styles.thumbWrap}>
-  //         {uri ? (
-  //           <Image source={{ uri }} style={styles.thumb} resizeMode="cover" />
-  //         ) : (
-  //           <View style={styles.thumbPlaceholder}>
-  //             <Icon name="movie" size={28} color="#8ea0b5" />
-  //           </View>
-  //         )}
-  //       </View>
-  //       <TouchableOpacity
-  //         style={styles.cardInfo}
-  //         onPress={() => setPlayer({ visible: true, path: item.path })}
-  //       >
-  //         <Text numberOfLines={1} style={styles.cardTitle}>
-  //           {item.name}
-  //         </Text>
-  //         <Text style={styles.cardMeta}>
-  //           {formatBytes(item.size)} • {formatDate(item.modified)}
-  //         </Text>
-  //       </TouchableOpacity>
-  //       <TouchableOpacity
-  //         style={styles.cardAction}
-  //         onPress={() =>
-  //           Alert.alert('Delete', 'Remove this video?', [
-  //             { text: 'Cancel', style: 'cancel' },
-  //             {
-  //               text: 'Delete',
-  //               style: 'destructive',
-  //               onPress: () => onDelete(item.path),
-  //             },
-  //           ])
-  //         }
-  //       >
-  //         <Icon name="delete" size={22} color="#ff6666" />
-  //       </TouchableOpacity>
-  //     </View>
-  //   );
-  // };
-
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ImageBackground
         source={{
           uri: 'https://images.unsplash.com/photo-1518779578993-ec3579fee39f?auto=format&fit=crop&w=1400&q=60',
@@ -156,17 +47,19 @@ export function HomeScreen({
         style={styles.bg}
         resizeMode="cover"
       >
-        <View style={styles.overlay} />
+        <View style={[styles.overlay, { backgroundColor: colors.overlay }]} />
 
         <View style={styles.topBar}>
-          <Text style={styles.brand}>PocketTimestamp</Text>
+          <Text style={[styles.brand, { color: colors.text }]}>
+            PocketTimestamp
+          </Text>
           <TouchableOpacity onPress={onOpenSettings} style={styles.topIconBtn}>
-            <Icon name="settings" size={24} color="#ffffff" />
+            <Icon name="settings" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.centerContent}>
-          <Text style={styles.tagline}>
+          <Text style={[styles.tagline, { color: colors.text }]}>
             Capture moments with precise timestamps
           </Text>
 
@@ -176,16 +69,22 @@ export function HomeScreen({
             style={styles.recordCta}
           >
             <View style={styles.recordOuter}>
-              <View style={styles.recordInner}>
-                <Icon name="videocam" size={28} color="#0b0f14" />
+              <View
+                style={[styles.recordInner, { backgroundColor: '#0a84ff' }]}
+              >
+                <Icon name="videocam" size={28} color="white" />
               </View>
             </View>
-            <Text style={styles.recordLabel}>Start Recording</Text>
+            <Text style={[styles.recordLabel, { color: colors.text }]}>
+              Start Recording
+            </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>v1.0 • Welcome</Text>
+          <Text style={[styles.footerText, { color: colors.footer }]}>
+            v1.0 • Welcome
+          </Text>
         </View>
       </ImageBackground>
 
@@ -263,7 +162,7 @@ const styles = StyleSheet.create({
   },
   tagline: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 16,
     opacity: 0.9,
     marginBottom: 18,
     textAlign: 'center',
