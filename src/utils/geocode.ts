@@ -5,7 +5,7 @@ export type GeoAddress = {
   displayName: string;
 };
 
-const GOOGLE_API_KEY = 'AIzaSyBfXLFKmSLFwyDgJybGsIJ9rWHnXKqjDow';
+const GOOGLE_API_KEY = '';
 
 export async function reverseGeocode(lat: number, lon: number): Promise<GeoAddress | null> {
   try {
